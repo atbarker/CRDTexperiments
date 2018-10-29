@@ -1,4 +1,4 @@
-package 2Pset
+package twopset
 
 import "Gset"
 
@@ -18,8 +18,13 @@ func (p *2Pset) Add(element interface{}) {
 	p.addGset.Add(element)
 }
 
-func (p *2Pset) Remove(element interface{}) {
-	p.remGset.Add(element)
+//set an error type to handle if the element doesn't exist
+func (p *2Pset) Remove(element interface{}) error{
+	if p.Query(element) != false{
+	    p.remGset.Add(element)
+	    return nil
+	}
+	return nil
 }
 
 func (p *2Pset) Query(element inteface{}) bool {
@@ -31,5 +36,8 @@ func Compare(s, t *2Pset) bool, error{
 }
 
 func Merge(s, t *2Pset) *2Pset, error{
-	return nil, nil
+	new2Pset := new2Pset()
+	new2Pset.addGset = Gset.Merge(s.addGset, t.addGset)
+	new2Pset.remGset = Gset.Merge(s.remGset, t.remGset)
+	return new2Pset, nil
 }

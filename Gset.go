@@ -8,7 +8,7 @@ type Gset struct {
 	baseSet baseSet
 }
 
-func newGset() *Gset {
+func NewGset() *Gset {
 	return &Gset{baseSet: baseSet{}}
 }
 
@@ -19,7 +19,7 @@ func (g *Gset) Add(element interface{}) error{
 }
 
 func (g *Gset) Query(element interface{}) (bool, error){
-	_, isThere := g.mainSet
+	_, isThere := g.baseSet[element]
 	return isThere, nil
 }
 
@@ -28,17 +28,27 @@ func (g *Gset) List()  ([]interface{}, error){
 	for element := range g.baseSet{
 		elements = append(elements, element)
 	}
-	return elements
+	return elements, nil
 }
 
 func (g *Gset) Length() (int, error){
 	return len(g.baseSet), nil
 }
 
-func Compare() error{
+
+//check if S.A is a subset of T.A
+func Compare(s, t *Gset) error{
 	return nil
 }
 
-func Merge() (*Gset, error){
-	return nil, nil
+//merge two sets
+func Merge(s, t *Gset) (*Gset, error){
+	newGset := NewGset()
+	for k, v := range s.baseSet{
+		newGset.baseSet[k] = v
+	}
+	for k, v := range t.baseSet{
+		newGset.baseSet[k] = v
+	}
+	return newGset, nil
 }
