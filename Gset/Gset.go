@@ -7,7 +7,7 @@ type baseSet map[interface{}]struct{}
 
 //all our Gset has to contain is a single set that grows monotonically
 type Gset struct {
-	baseSet baseSet
+	BaseSet baseSet
 }
 
 
@@ -19,30 +19,30 @@ type OpList struct {
 }
 
 func NewGset() *Gset {
-	return &Gset{baseSet: baseSet{}}
+	return &Gset{BaseSet: baseSet{}}
 }
 
 
 func (g *Gset) Add(element interface{}) error{
-	g.baseSet[element] = struct{}{}
+	g.BaseSet[element] = struct{}{}
 	return nil
 }
 
-func (g *Gset) Query(element interface{}) (bool, error){
-	_, isThere := g.baseSet[element]
-	return isThere, nil
+func (g *Gset) Query(element interface{}) bool{
+	_, isThere := g.BaseSet[element]
+	return isThere
 }
 
 func (g *Gset) List()  ([]interface{}, error){
-	elements := make([]interface{}, 0, len(g.baseSet))
-	for element := range g.baseSet{
+	elements := make([]interface{}, 0, len(g.BaseSet))
+	for element := range g.BaseSet{
 		elements = append(elements, element)
 	}
 	return elements, nil
 }
 
 func (g *Gset) Length() (int, error){
-	return len(g.baseSet), nil
+	return len(g.BaseSet), nil
 }
 
 func (g *Gset) ApplyOps(opslist *list.List) error {
@@ -50,7 +50,7 @@ func (g *Gset) ApplyOps(opslist *list.List) error {
 		oplistElement := e.Value.(*OpList)
 		if oplistElement.Operation == "Add" {
 			g.Add(oplistElement.Element)
-			g.baseSet[oplistElement.Element] = oplistElement.contents
+			g.BaseSet[oplistElement.Element] = oplistElement.contents
 		}else{
 			return nil
 		}
@@ -67,11 +67,11 @@ func Compare(s, t *Gset) error{
 //merge two sets
 func Merge(s, t *Gset) (*Gset, error){
 	newGset := NewGset()
-	for k, v := range s.baseSet{
-		newGset.baseSet[k] = v
+	for k, v := range s.BaseSet{
+		newGset.BaseSet[k] = v
 	}
-	for k, v := range t.baseSet{
-		newGset.baseSet[k] = v
+	for k, v := range t.BaseSet{
+		newGset.BaseSet[k] = v
 	}
 	return newGset, nil
 }

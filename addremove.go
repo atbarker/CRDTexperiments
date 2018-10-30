@@ -1,7 +1,7 @@
 package addremove
 
-import "2Pset"
-import "Gset"
+import "CRDTexperiments/twopset"
+import "CRDTexperiments/Gset"
 
 type edge struct{
 	left interface{}
