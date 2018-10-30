@@ -1,6 +1,6 @@
 package addremove
 
-import "CRDTexperiments/twopset"
+import "CRDTexperiments/Twopset"
 import "CRDTexperiments/Gset"
 
 type edge struct{
@@ -9,23 +9,23 @@ type edge struct{
 }
 
 type AddRemove struct{
-	V *2Pset
-	E *Gset
+	V *Twopset.Twopset
+	E *Gset.Gset
 }
 
 func NewAddRemove() *AddRemove{
 	AR := &AddRemove{
-		V: twopset.New2Pset(),
+		V: Twopset.Newtwopset(),
 		E: Gset.NewGset(),
 	}
 	AR.V.Add("left")
 	AR.V.Add("right")
 	initEdge := &edge{
-		left: "left"
-		right: "right"
+		left: "left",
+		right: "right",
 	}
 	AR.E.Add("initEdge")
-	AR.E.baseSet["initEdge"] = initEdge
+	AR.E.BaseSet["initEdge"] = initEdge
 	return AR
 }
 

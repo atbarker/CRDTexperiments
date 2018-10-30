@@ -3,7 +3,7 @@ package Gset
 import "container/list"
 
 //map interfaces (key) to structs (value) in our set
-type baseSet map[interface{}]struct{}
+type baseSet map[interface{}]interface{}
 
 //all our Gset has to contain is a single set that grows monotonically
 type Gset struct {
