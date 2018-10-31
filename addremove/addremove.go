@@ -2,15 +2,30 @@ package addremove
 
 import "CRDTexperiments/Twopset"
 import "CRDTexperiments/Gset"
+import "labix.org/v1/vclock"
 
-type edge struct{
-	left interface{}
-	right interface{}
+
+type Node struct{
+	ID interface{}
+}
+
+//an edge points from the origin to the destination
+//so left to right
+type Edge struct{
+	left *Node
+	right *Node
 }
 
 type AddRemove struct{
+	vectorClock *vclock.VClock
 	V *Twopset.Twopset
 	E *Gset.Gset
+}
+
+func NewNode(id interface{}) *Node{
+	return &Node{
+		ID: id,
+	}
 }
 
 func NewAddRemove() *AddRemove{
@@ -18,14 +33,11 @@ func NewAddRemove() *AddRemove{
 		V: Twopset.Newtwopset(),
 		E: Gset.NewGset(),
 	}
-	AR.V.Add("left")
-	AR.V.Add("right")
-	initEdge := &edge{
-		left: "left",
-		right: "right",
-	}
-	AR.E.Add("initEdge")
-	AR.E.BaseSet["initEdge"] = initEdge
+	leftSentinel := NewNode("leftSentinel")
+	rightSentinel := NewNode("rightSentinel")
+	AR.V.Add("leftSentinel", leftSentinel)
+	AR.V.Add("rightSentinel", rightSentinel)
+	AR.AddEdge("sentinelEdge", "leftSentinel", "rightSentinel")
 	return AR
 }
 
@@ -36,6 +48,8 @@ func (a *AddRemove) Lookup (element interface{}) bool{
 	return false
 }
 
+
+//depth first search will likely be necessary
 func (a *AddRemove) QueryBefore(u, v interface{}) bool{
 	if a.V.Query(u) && a.V.Query(v){
 
@@ -43,14 +57,25 @@ func (a *AddRemove) QueryBefore(u, v interface{}) bool{
 	return false
 }
 
-func (a *AddRemove) AddEdge(edgename, u, v interface{}){
+func (a *AddRemove) FetchNode(v interface{}) *Node{
+	node := a.V.Fetch(v).(*Node)
+	return node
+}
 
+func (a *AddRemove) AddEdge(edgename, u, v interface{}){
+	if a.V.Query(u) && a.V.Query(v){
+		newEdge := &Edge{
+			left: a.FetchNode(u),
+			right: a.FetchNode(v),
+		}
+		a.E.Add(edgename, newEdge)
+	}
 }
 
 //TODO add something to generate a new unique ID for edges
 func (a *AddRemove) AddBetween(u, v, w interface{}) {
 	if !a.Lookup(w) && a.QueryBefore(u, w){
-		a.V.Add(v)
+		a.V.Add(w, NewNode(w))
 		a.AddEdge("something", u, v)
 		a.AddEdge("something2", v, w)
 	}

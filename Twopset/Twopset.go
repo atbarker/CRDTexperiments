@@ -1,6 +1,7 @@
 package Twopset
 
 import "CRDTexperiments/Gset"
+//import "labix.org/v1/vclock"
 
 type Twopset struct{
 	addGset *Gset.Gset
@@ -14,14 +15,18 @@ func Newtwopset() *Twopset{
 	}
 }
 
-func (p *Twopset) Add(element interface{}) {
-	p.addGset.Add(element)
+func (p *Twopset) Add(element, contents interface{}) {
+	p.addGset.Add(element, contents)
+}
+
+func (p *Twopset) Fetch(element interface{}) interface{}{
+	return p.addGset.Fetch(element)
 }
 
 //set an error type to handle if the element doesn't exist
 func (p *Twopset) Remove(element interface{}) error{
 	if p.Query(element) != false{
-	    p.remGset.Add(element)
+	    p.remGset.Add(element, struct{}{})
 	    return nil
 	}
 	return nil

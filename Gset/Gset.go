@@ -1,6 +1,7 @@
 package Gset
 
 import "container/list"
+//import "labix.org/v1/vclock"
 
 //map interfaces (key) to structs (value) in our set
 type baseSet map[interface{}]interface{}
@@ -23,9 +24,14 @@ func NewGset() *Gset {
 }
 
 
-func (g *Gset) Add(element interface{}) error{
-	g.BaseSet[element] = struct{}{}
+func (g *Gset) Add(element, contents interface{}) error{
+	g.BaseSet[element] = contents
 	return nil
+}
+
+func (g *Gset) Fetch(element interface{}) interface{}{
+	contents := g.BaseSet[element]
+	return contents
 }
 
 func (g *Gset) Query(element interface{}) bool{
@@ -49,7 +55,7 @@ func (g *Gset) ApplyOps(opslist *list.List) error {
 	for e := opslist.Front(); e != nil; e = e.Next() {
 		oplistElement := e.Value.(*OpList)
 		if oplistElement.Operation == "Add" {
-			g.Add(oplistElement.Element)
+			g.Add(oplistElement.Element, oplistElement.contents)
 			g.BaseSet[oplistElement.Element] = oplistElement.contents
 		}else{
 			return nil
