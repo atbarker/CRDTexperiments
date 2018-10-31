@@ -30,6 +30,7 @@ func NewNode(id interface{}) *Node{
 
 func NewAddRemove() *AddRemove{
 	AR := &AddRemove{
+		vectorClock: vclock.New(),
 		V: Twopset.Newtwopset(),
 		E: Gset.NewGset(),
 	}
