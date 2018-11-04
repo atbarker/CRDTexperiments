@@ -19,7 +19,7 @@ type Edge struct{
 type AddRemove struct{
 	vectorClock *vclock.VClock
 	V *Twopset.Twopset
-	E *Gset.Gset
+	E *Twopset.Twopset
 }
 
 func NewNode(id interface{}) *Node{
@@ -32,7 +32,7 @@ func NewAddRemove() *AddRemove{
 	AR := &AddRemove{
 		vectorClock: vclock.New(),
 		V: Twopset.Newtwopset(),
-		E: Gset.NewGset(),
+		E: Twopset.Newtwopset(),
 	}
 	leftSentinel := NewNode("leftSentinel")
 	rightSentinel := NewNode("rightSentinel")
@@ -49,8 +49,16 @@ func (a *AddRemove) Lookup (element interface{}) bool{
 	return false
 }
 
+func (a *AddRemove) LookupEdge (element interface{}) bool{
+	if a.E.Query(element){
+		return true
+	}
+	return false
+}
+
 
 //depth first search will likely be necessary
+//with the crazy interface madness this is going to be REALLY slow.
 func (a *AddRemove) QueryBefore(u, v interface{}) bool{
 	if a.V.Query(u) && a.V.Query(v){
 
@@ -61,6 +69,11 @@ func (a *AddRemove) QueryBefore(u, v interface{}) bool{
 func (a *AddRemove) FetchNode(v interface{}) *Node{
 	node := a.V.Fetch(v).(*Node)
 	return node
+}
+
+//will return all edges in the set that contain a given node
+func (a *AddRemove) FetchEdge(u interface{}) interface{}{
+	return nil
 }
 
 func (a *AddRemove) AddEdge(edgename, u, v interface{}){
@@ -88,6 +101,9 @@ func (a *AddRemove) Remove(v interface{}){
 	}
 }
 
+//really only check if the edge exists at all
 func (a *AddRemove) RemoveEdge(v interface{}){
-
+	if a.LookupEdge(v){
+		a.E.Remove(v)
+	}
 }
