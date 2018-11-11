@@ -150,13 +150,13 @@ func (a *AddRemove) AddBetween(u, v, w interface{}) {
 	}
 }
 
+//needs a check to remove dangling edges, could possibly be done during garbage collection
 func (a *AddRemove) Remove(v interface{}){
 	if a.Lookup(v) && (v != "left" || v != "right"){
 		a.V.Remove(v)
 	}
 }
 
-//really only check if the edge exists at all
 func (a *AddRemove) RemoveEdge(v interface{}){
 	if a.LookupEdge(v){
 		a.E.Remove(v)
