@@ -39,12 +39,12 @@ func (g *Gset) Query(element interface{}) bool{
 	return isThere
 }
 
-func (g *Gset) List()  ([]interface{}, error){
+func (g *Gset) List()  ([]interface{}){
 	elements := make([]interface{}, 0, len(g.BaseSet))
 	for element := range g.BaseSet{
 		elements = append(elements, element)
 	}
-	return elements, nil
+	return elements
 }
 
 func (g *Gset) Length() (int, error){

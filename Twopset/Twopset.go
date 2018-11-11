@@ -32,6 +32,10 @@ func (p *Twopset) Remove(element interface{}) error{
 	return nil
 }
 
+func (p *Twopset) List()  ([]interface{}){
+	return p.addGset.List()
+}
+
 func (p *Twopset) Query(element interface{}) bool{
 	return (p.addGset.Query(element) && !p.remGset.Query(element))
 }
