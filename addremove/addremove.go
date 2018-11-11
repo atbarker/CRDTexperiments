@@ -1,12 +1,22 @@
 package addremove
 
 import "CRDTexperiments/Twopset"
-//import "CRDTexperiments/Gset"
 import "labix.org/v1/vclock"
+import "container/list"
 
 
 type Node struct{
 	ID interface{}
+}
+
+//here we represent the element being added as an array
+//0 is the element to add or remove (v)
+//1 is the first element in an addbetween (u)
+//2 is the last element in an addbetween (w)
+type OpList struct {
+	Operation string
+	Element   []interface{}
+	contents  struct{}
 }
 
 //an edge points from the origin to the destination
@@ -18,6 +28,7 @@ type Edge struct{
 
 type AddRemove struct{
 	vectorClock *vclock.VClock
+	externalVectorClocks []vclock.VClock
 	V *Twopset.Twopset
 	E *Twopset.Twopset
 }
@@ -132,8 +143,8 @@ func (a *AddRemove) AddEdge(u, v interface{}){
 }
 
 func (a *AddRemove) AddBetween(u, v, w interface{}) {
-	if !a.Lookup(w) && a.QueryBefore(u, w){
-		a.V.Add(w, NewNode(w))
+	if !a.Lookup(v) && a.QueryBefore(u, w){
+		a.V.Add(v, NewNode(v))
 		a.AddEdge(u, v)
 		a.AddEdge(v, w)
 	}
@@ -150,4 +161,18 @@ func (a *AddRemove) RemoveEdge(v interface{}){
 	if a.LookupEdge(v){
 		a.E.Remove(v)
 	}
+}
+
+func (a *AddRemove) ApplyOps(opslist *list.List) error{
+	for e := opslist.Front(); e != nil; e = e.Next(){
+		oplistElement := e.Value.(*OpList)
+		if oplistElement.Operation == "AddBetween"{
+			a.AddBetween(oplistElement.Element[1], oplistElement.Element[0], oplistElement.Element[2])
+		}else if oplistElement.Operation == "Remove"{
+			a.Remove(oplistElement.Element[0])
+		}else{
+			return nil
+		}
+	}
+	return nil
 }
