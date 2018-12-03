@@ -13,19 +13,7 @@ by Austen Barker &middot; edited by  and Lindsey Kuper
 
 ## Background & Recap
 
-[Conflict-Free Replicated Data Types](https://hal.inria.fr/inria-00609399v1/document) (CRDTs) are a class of specialized data structures designed to be replicated across a distributed system while providing eventual consistency and high availability. CRDTs can be modified concurrently without coordination while providing a means to reconcile conflicts between replicas.
-
-While CRDTs are a promising solution to the problem of building an eventually consistent distributed system, numerous practical implementation challenges remain. To deal with issues that arise when processing concurrent operations such as, for example, conflicting additions and removals of elements in a set, many CRDT specifications rely on the use of _tombstones_, which are markers to represent deleted items. These tombstones can accumulate over time and necessitate the use of a garbage collection system in order to avoid unacceptably costly growth of underlying data structures. These garbage collection systems can prove to be difficult to implement in practice. This series of two posts will chronicle my exploration of garbage collection in the context of CRDTs, and my attempts to implement a non-trivial garbage-collected CRDT based on the specifications in [Shapiro et al.'s _A Comprehensive Study of Convergent and Commutative Replicated Data Types_](https://hal.inria.fr/inria-00555588/document).
-
-Shapiro et al. present two styles of specifying CRDTs: _state-based_ and _operation-based_. The difference comes from how the replicas propagate updates to one another. In the state-based model, replicas transmit their entire local state to other replicas, which then reconcile inconsistencies through a commutative, associative, and idempotent _merge_ operation. As seen later in this blog post, a merge operation can often be represented by a union between two sets.
-
-Operation-based, or op-based, CRDTs transmit their state by sending only the update operations performed to other replicas, so each operation is individually replayed on the recipient replica. In this model, the operations must be commutative but not necessarily idempotent. Op-based CRDTs are more particular about the messaging protocol between replicas, but require less bandwidth than state-based CRDTs, which must transmit the entire local state instead of small operations. State-based CRDTs, on the other hand, provide an associative merge operation.
-
-Shapiro et al. give specifications for a variety of CRDT data structures, including sets, counters, registers, and graphs. This blog post is primarily concerned with the implementation of sets and graphs. The two simplest sets specified are the Grow-only Set (G-Set) and the so-called Two-Phase Set (2P-Set). The G-Set is a set of elements that grows monotonically, with no removal operation. 2P-Sets, on the other hand, support removing items from the set.  In the case of a state-based 2P-Set, conflicts between add and remove operations during a merge necessitate some record of which elements have been removed from the set; an additional G-Set, sometimes called the _tombstone set_, maintains markers or tombstones denoting removed elements.
-
-Shapiro et al. then use 2P-Sets and G-Sets to represent sets of vertices and edges in a directed graph. Their Montonic Directed Acyclic Graph (Monotonic DAG) CRDT specification is simply two G-Sets, one for the vertices and one for the edges. In this data structure, there is no operation for removing vertices, and its contents are monotonically increasing.
-
-Finally, Shapiro et al. introduce the Add-Remove Partial Order (ARPO) graph CRDT as a solution to the mess that arises when one attempts to include vertex removals in their Monotonic DAG specification. They define the ARPO using a 2P-Set to represent vertices and a G-Set to represent edges.
+In the previous blog post we discuss [Conflict-Free Replicated Data Types](https://hal.inria.fr/inria-00609399v1/document) (CRDTs), a class of specialized data structures designed to be replicated across a distributed system. We implemented a few CRDTs as specified by [Shapiro et al.'s _A Comprehensive Study of Convergent and Commutative Replicated Data Types_](https://hal.inria.fr/inria-00555588/document). Some of these implementations run into a perennial problem in distributed systems, distributed garbage collection. In the previous post we discussed multiple issues facing distributed garbage collection such as, high metadata storage costs, fault intolerance, and the need to stronger synchronization that betrays the asynchronous nature of a CRDT. To tackle these problems we look at a series of research avenues that include [pure operation-based CRDTs](https://arxiv.org/abs/1710.04469), [causal trees](https://github.com/gritzko/ctre), and [delta-state CRDTs](https://arxiv.org/pdf/1603.01529.pdf). We then take the Two Phase Set (2P-set) and Add Remove Partial Order (ARPO) implementations from the previous post and discuss methods for extending these to support some form of distributed garbage collection.
 
 ## The need for garbage collection
 
@@ -47,7 +35,13 @@ Commitment issues arise when one needs to perform an operation with a need for s
 
 ### Delta State CRDTs
 
-[delta-state CRDTs](https://arxiv.org/pdf/1603.01529.pdf)
+[Delta-state CRDTs](https://arxiv.org/pdf/1603.01529.pdf) help to avoid the issue of sending the entire state of a data type over a network. Unlike some of the previous work in CRDTs they account for garbage collection in their anti-entropy algorithm designed to enforce causal consistency. In this algorithm each node maintains two maps, one for keeping track of a sequence of state deltas and another for a series of acknowledgements from each neighbor.
+
+Still has considerable metadata overhead (though not with vector clocks)
+
+Relies on something similar to proving causal relationships
+
+When it gets acknowledgements and the delta has been applied then it can garbage collect the delta. No mention of markers or tombstones as of yet in the paper.
 
 ### Reducing Vector Clock space overhead
 
@@ -57,16 +51,10 @@ Commitment issues arise when one needs to perform an operation with a need for s
 
 [Paxos Commit](https://lamport.azurewebsites.net/video/consensus-on-transaction-commit.pdf) and Two-Phase Commit protocols
 
+## Implementation
+
 ## Conclusion
 
 
 ## Implementing Garbage Collection
-
-Having implemented an ARPO-like CRDT from the original specification, my next step was to investigate garbage collection. Implementing garbage collection for a CRDT like this one is a challenge.  First, establishing the stability of an update as described in the paper assumes that the set of all replicas is known and that they do not crash permanently. Thus the implementation must include a way to detect crashed replicas (in practice, using a timeout) and a way to communicate the failure of a replica reliably to all other replicas.
-
-Another issue is the metadata storage requirements for implementing garbage collection.  Assuming causal delivery of updates requires the use of vector clocks or some similar mechanism to establish causality. Shapiro et al. specifically mention using vector clocks for determining stability in section 4.1 of their paper.   As the definition of stability depends on causality, one can use the same vector clocks to establish both. However, the paper's scheme for determining stability requires each replica to store a copy of the last received vector clock from every other known replica. Therefore, the space complexity required to store the vector clocks locally for $N$ replicas is $O(N^2)$, and total space consumption across the whole set of replicas, $O(N^3)$ --- considerably worse than the usual $O(N)$ necessary to store a single vector clock at each replica for tracking causal relationships, and enough to make programmers uneasy. 
-
-When adding the class of commitment problems to the already mounting pile of dilemmas, the programmer loses hope for the availability and performance of their system. The solutions discussed by Shapiro et al. include the [Paxos Commit](https://lamport.azurewebsites.net/video/consensus-on-transaction-commit.pdf) and Two-Phase Commit protocols, which add considerably to the complexity of the implementation along with sacrificing availability. Shapiro et al. suggest performing operations requiring strong synchronization during periods when network partitions are rare; it may also help to limit such operations to when the availability of a system is not paramount. For example, one could run a garbage collection job during a scheduled server maintenance window.
-
-To sum up, distributed garbage collection requires confronting some of the hardest problems in distributed systems.  Perhaps the easiest solution to the unbounded growth of a CRDT via tombstones is to use the [ostrich algorithm](https://en.wikipedia.org/wiki/Ostrich_algorithm), or to avoid CRDTs that use tombstones entirely.
 
