@@ -3,15 +3,22 @@ package Twopset
 import "CRDTexperiments/Gset"
 //import "labix.org/v1/vclock"
 
+type IntMap map[int]interface{}
+
 type Twopset struct{
-	addGset *Gset.Gset
-	remGset *Gset.Gset
+	addGset         *Gset.Gset
+	remGset         *Gset.Gset
+	ACK             IntMap
+	Deltas          IntMap
+	DeltaCounter    int
+	Interval        int
 }
 
 func Newtwopset() *Twopset{
 	return &Twopset{
 		addGset: Gset.NewGset(),
 		remGset: Gset.NewGset(),
+		DeltaCounter: 0,
 	}
 }
 
@@ -44,9 +51,28 @@ func Compare(s, t *Twopset)  (bool, error){
 	return false, nil
 }
 
+//create deltas
+func (p *Twopset) CreateDelta() *Twopset{
+
+}
+
+//join different deltas
+func (p *Twopset) JoinDeltas(){
+
+}
+
+
+//Merge into the local state
 func Merge(s, t *Twopset) (*Twopset, error){
 	new2Pset := Newtwopset()
 	new2Pset.addGset, _ = Gset.Merge(s.addGset, t.addGset)
 	new2Pset.remGset, _ = Gset.Merge(s.remGset, t.remGset)
 	return new2Pset, nil
+}
+
+
+func (p *Twopset) GarbageCollect(){
+	for k, v := p.Deltas{
+
+	}
 }
